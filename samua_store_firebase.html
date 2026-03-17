@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מעדני סבא שמואל - חנות מכירות</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+            direction: rtl;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .customer-page { display: none; }
+        .customer-page.active { display: block; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        header { 
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 12px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .header-image {
+            font-size: 64px;
+            line-height: 1;
+        }
+        .header-text h1 { font-size: 28px; margin-bottom: 8px; }
+        .header-text p { font-size: 14px; opacity: 0.9; }
+        
+        .admin-link-bar {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #fef3c7;
+            border-radius: 8px;
+            border: 1px solid #fcd34d;
+        }
+        .admin-link-bar a {
+            color: #92400e;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .admin-link-bar a:hover {
+            text-decoration: underline;
+        }
+        
+        .main-content { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+        .products-grid { 
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        
+        .product-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .product-card:hover { 
+            border-color: #d1d5db;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            border-bottom: 1px solid #e5e7eb;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-image-emoji {
+            font-size: 56px;
+            line-height: 1;
+        }
+        
+        .product-info {
+            padding: 14px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .product-name { 
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+        .product-description {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .product-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 10px;
+        }
+        
+        .product-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .qty-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f3f4f6;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .qty-btn:hover {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .qty-display {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .add-btn {
+            flex: 1;
+            padding: 8px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .add-btn:hover { background: #2563eb; }
+        .add-btn:active { transform: scale(0.96); }
+        
+        .cart-sidebar {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .cart-title { 
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .cart-items { 
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+            gap: 8px;
+        }
+        .cart-item-name { 
+            flex: 1;
+            font-weight: 500;
+        }
+        .cart-item-qty { 
+            color: #6b7280;
+            font-size: 11px;
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .cart-item-price { 
+            font-weight: 600;
+            min-width: 50px;
+            text-align: left;
+        }
+        .remove-item {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .remove-item:hover { background: #dc2626; }
+        
+        .cart-summary {
+            border-top: 1px solid #d1d5db;
+            padding-top: 12px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .total-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: #3b82f6;
+            margin-top: 8px;
+        }
+        .checkout-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .checkout-btn:hover { background: #059669; }
+        .checkout-btn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed;
+            background: #9ca3af;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px rgba(0,0,0,0.2);
+            margin: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #1f2937;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .form-group textarea { 
+            resize: vertical; 
+            min-height: 80px;
+        }
+        
+        .modal-buttons { 
+            display: flex; 
+            gap: 12px; 
+            margin-top: 20px;
+        }
+        .modal-buttons button { 
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+        .btn-cancel:hover {
+            background: #d1d5db;
+        }
+        .btn-primary {
+            background: #10b981;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #059669;
+        }
+        
+        .success-message {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        @keyframes slideIn { 
+            from { transform: translateX(400px); opacity: 0; } 
+            to { transform: translateX(0); opacity: 1; } 
+        }
+        
+        .admin-page { display: none; }
+        .admin-page.active { display: block; }
+        
+        .admin-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+            overflow-x: auto;
+        }
+        
+        .admin-tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .admin-tab-btn:hover {
+            color: #3b82f6;
+        }
+        
+        .admin-tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .admin-tab-content {
+            display: none;
+        }
+        
+        .admin-tab-content.active {
+            display: block;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-header h1 { margin: 0; }
+        
+        .admin-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .admin-section {
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .admin-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .admin-section h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .dashboard-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .dashboard-card.red {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: #fca5a5;
+        }
+        
+        .dashboard-card.blue {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-color: #bfdbfe;
+        }
+        
+        .dashboard-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .dashboard-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #16a34a;
+        }
+        
+        .dashboard-card.red .dashboard-value {
+            color: #dc2626;
+        }
+        
+        .dashboard-card.blue .dashboard-value {
+            color: #2563eb;
+        }
+        
+        .products-summary {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .products-summary h3 {
+            margin-bottom: 16px;
+            font-size: 16px;
+        }
+        
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .products-table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: right;
+            font-weight: 600;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+        
+        .products-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+        
+        .products-table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .qty-badge {
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .orders-list {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+        
+        .order-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .order-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .order-number {
+            font-weight: 700;
+            font-size: 14px;
+            color: #3b82f6;
+        }
+        
+        .order-date {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .order-customer {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .order-details {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .order-total {
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 12px;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .order-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .order-btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .order-btn-edit:hover {
+            background: #2563eb;
+        }
+        
+        .order-btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .order-btn-delete:hover {
+            background: #dc2626;
+        }
+        
+        .admin-btn {
+            padding: 10px 16px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .admin-btn:hover { background: #2563eb; }
+        
+        .logout-btn {
+            background: #ef4444;
+            padding: 10px 16px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        .success-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+        }
+
+        .success-screen.show {
+            display: flex;
+        }
+
+        .success-screen-content {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .success-screen-text {
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .success-screen-subtext {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .success-screen-number {
+            font-size: 32px;
+            font-weight: 700;
+            background: rgba(255,255,255,0.2);
+            padding: 20px 40px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .new-order-btn {
+            padding: 16px 40px;
+            background: white;
+            color: #10b981;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .new-order-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        @media (max-width: 900px) {
+            .main-content { 
+                grid-template-columns: 1fr; 
+            }
+            .cart-sidebar { 
+                position: relative; 
+                top: auto; 
+            }
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .header-image {
+                font-size: 48px;
+            }
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== CUSTOMER PAGE ===== -->
+    <div class="customer-page active">
+        <div class="container">
+            <header>
+                <div class="header-image">🍽️</div>
+                <div class="header-text">
+                    <h1>מעדני סבא שמואל</h1>
+                    <p>אוכל ביתי וטעים לשבת וחג | תפריט פסח - שרויה</p>
+                </div>
+            </header>
+
+            <div class="admin-link-bar">
+                <a onclick="goToAdmin()">👤 כניסה למנהל אתר</a>
+            </div>
+
+            <div class="main-content">
+                <div class="products-grid" id="productsGrid"></div>
+
+                <div class="cart-sidebar">
+                    <div class="cart-title">🛒 עגלת קניות</div>
+                    <div class="cart-items" id="cartItems">
+                        <p style="text-align: center; color: #6b7280; font-size: 12px;">אין מוצרים בעגלה</p>
+                    </div>
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>סה״כ פריטים:</span>
+                            <span id="itemsCount">0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>סה״כ מחיר:</span>
+                        </div>
+                        <div class="total-price" id="totalPrice">₪0</div>
+                        <button class="checkout-btn" id="checkoutBtn" onclick="goToCheckout()" disabled>המשך לתשלום</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ADMIN PAGE ===== -->
+    <div class="admin-page">
+        <div class="container">
+            <div class="admin-header">
+                <h1>⚙️ ניהול אתר - מעדני סבא שמואל</h1>
+                <button class="logout-btn" onclick="logout()">🚪 התנתקות</button>
+            </div>
+
+            <div class="admin-content">
+                <!-- Admin Tabs -->
+                <div class="admin-tabs">
+                    <button class="admin-tab-btn active" onclick="switchAdminTab('dashboard')">📊 דשבורד</button>
+                    <button class="admin-tab-btn" onclick="switchAdminTab('orders')">📋 הזמנות</button>
+                    <button class="admin-tab-btn" onclick="switchAdminTab('settings')">⚙️ הגדרות</button>
+                </div>
+
+                <!-- Dashboard Tab -->
+                <div class="admin-tab-content active" id="dashboard-tab">
+                    <h2 style="margin-bottom: 20px;">📊 סיכום ניהול</h2>
+                    
+                    <div class="dashboard-grid" id="dashboardStats"></div>
+                    
+                    <div class="products-summary">
+                        <h3>📦 כמויות מוצרים להכנה</h3>
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>מוצר</th>
+                                    <th>כמות כוללת</th>
+                                    <th>יחידה</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsQtyTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div class="admin-tab-content" id="orders-tab">
+                    <h2 style="margin-bottom: 20px;">📋 היסטוריית הזמנות</h2>
+                    <div class="orders-list" id="ordersList"></div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="admin-tab-content" id="settings-tab">
+                    <div class="admin-section">
+                        <h2>⚙️ הגדרות אתר</h2>
+                        <div style="display: grid; gap: 16px; max-width: 600px;">
+                            <div class="form-group">
+                                <label>הודעה ללקוח (כיצד תסופק ההזמנה)</label>
+                                <textarea id="deliveryMessage" placeholder="דוגמה: ההזמנה תסופק ביום חמישי בין 16:00 ל-18:00"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>טוקן Telegram Bot</label>
+                                <input type="text" id="telegramToken" placeholder="בוט טוקן">
+                            </div>
+                            <div class="form-group">
+                                <label>Chat ID של Telegram</label>
+                                <input type="text" id="telegramChatId" placeholder="Chat ID">
+                            </div>
+                            <button class="admin-btn" onclick="saveSettings()">💾 שמור הגדרות</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CHECKOUT MODAL ===== -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">סיכום הזמנה</h2>
+            <div id="orderSummary" style="margin-bottom: 20px; background: #f9fafb; padding: 12px; border-radius: 8px; max-height: 200px; overflow-y: auto;"></div>
+            
+            <div class="form-group">
+                <label>שם מלא *</label>
+                <input type="text" id="customerName" placeholder="שם מלא">
+            </div>
+            <div class="form-group">
+                <label>טלפון *</label>
+                <input type="tel" id="customerPhone" placeholder="0541234567">
+            </div>
+            <div class="form-group">
+                <label>דוא״ל *</label>
+                <input type="email" id="customerEmail" placeholder="example@email.com">
+            </div>
+            <div class="form-group">
+                <label>כתובת *</label>
+                <input type="text" id="customerAddress" placeholder="כתובת למשלוח">
+            </div>
+            <div class="form-group">
+                <label>הערה (אופציונלי)</label>
+                <textarea id="orderNotes" placeholder="הוסף הערה או דרישה מיוחדת..."></textarea>
+            </div>
+
+            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #dcfce7;">
+                <p style="font-size: 14px; margin-bottom: 8px;"><strong>מספר הזמנה:</strong> <span id="orderNumber"></span></p>
+                <p style="font-size: 12px; color: #166534;">סה״כ לתשלום: <strong id="orderTotal"></strong></p>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeCheckout()">ביטול</button>
+                <button class="btn-primary" onclick="completeOrder()">שלח הזמנה וקבל קובץ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LOGIN MODAL ===== -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2 style="margin-bottom: 20px; text-align: center;">🔐 כניסה למנהל</h2>
+            
+            <div class="form-group">
+                <label>סיסמה</label>
+                <input type="password" id="adminPassword" placeholder="הכנס את הסיסמה" onkeypress="if(event.key==='Enter') adminLogin()">
+            </div>
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 20px; text-align: center;">הסיסמה הברירת מחדל היא: <code style="background: #f3f4f6; padding: 2px 6px;">1234</code></p>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeLoginModal()">ביטול</button>
+                <button class="btn-primary" onclick="adminLogin()">כניסה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SUCCESS SCREEN ===== -->
+    <div class="success-screen" id="successScreen">
+        <div class="success-screen-content">✅</div>
+        <div class="success-screen-text">ההזמנה התקבלה בהצלחה!</div>
+        <div class="success-screen-subtext">תודה על הזמנתך</div>
+        <div class="success-screen-number">
+            מספר הזמנה: <span id="successOrderNumber"></span>
+        </div>
+        <button class="new-order-btn" onclick="newOrder()">🛍️ הזמנה חדשה</button>
+    </div>
+
+    <div class="success-message" id="successMessage">✓ הפעולה בוצעה בהצלחה!</div>
+
+    <script>
+        // ===== FIREBASE CONFIG =====
+        // ⚠️ עדכן את הנתונים האלה עם שלך מ-Firebase Console
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoKey123456789",
+            authDomain: "samua-store.firebaseapp.com",
+            databaseURL: "https://samua-store-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "samua-store",
+            storageBucket: "samua-store.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abc123def456"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database(app);
+
+        // ===== PRODUCTS DATABASE =====
+        let products = [
+            { id: 1, name: "קוגל תפוח אדמה", desc: "תבנית ארוכה", price: 44, image: "🥔", imageType: "emoji" },
+            { id: 2, name: "פירה עם בצל מטוגן", desc: "1 ליטר", price: 38, image: "🧅", imageType: "emoji" },
+            { id: 3, name: "פירה עם בצל מטוגן", desc: "2 ליטר", price: 74, image: "🧅", imageType: "emoji" },
+            { id: 4, name: "חזרת", desc: "250 גרם", price: 32, image: "🥬", imageType: "emoji" },
+            { id: 5, name: "חזרת", desc: "500 גרם", price: 55, image: "🥬", imageType: "emoji" },
+            { id: 6, name: "חזרת", desc: "קילו", price: 85, image: "🥬", imageType: "emoji" },
+            { id: 7, name: "חזרת לבנה מרור", desc: "כ-200 גרם", price: 39, image: "🌿", imageType: "emoji" },
+            { id: 8, name: "כרוב מאודה", desc: "1 ליטר", price: 49, image: "🥬", imageType: "emoji" },
+            { id: 9, name: "כרוב מאודה", desc: "1.5 ליטר", price: 68, image: "🥬", imageType: "emoji" },
+            { id: 10, name: "דג קרפיון ממולא", desc: "גפילטע פיש", price: 30, image: "🐟", imageType: "emoji" },
+            { id: 11, name: "דג קציצת", desc: "גפילטע פיש", price: 28, image: "🐟", imageType: "emoji" },
+            { id: 12, name: "מרק עוף צח", desc: "עם אטריות, 2 ליטר", price: 75, image: "🍲", imageType: "emoji" },
+            { id: 13, name: "פתיתים ממצות", desc: "1 ליטר", price: 50, image: "🍜", imageType: "emoji" },
+            { id: 14, name: "פתיתים ממצות", desc: "1.5 ליטר", price: 68, image: "🍜", imageType: "emoji" },
+            { id: 15, name: "אטריות למרק", desc: "1 ליטר (5 מנות)", price: 38, image: "🍝", imageType: "emoji" },
+            { id: 16, name: "אטריות למרק", desc: "1.5 ליטר (8 מנות)", price: 68, image: "🍝", imageType: "emoji" },
+            { id: 17, name: "שניצל חזה עוף", desc: "קמח מצה", price: 28, image: "🍗", imageType: "emoji" },
+            { id: 18, name: "כבד עם בצל ורוטב", desc: "1 ליטר", price: 130, image: "🍖", imageType: "emoji" },
+            { id: 19, name: "כבד קצוץ", desc: "500 גרם", price: 50, image: "🍖", imageType: "emoji" },
+            { id: 20, name: "כבד קצוץ", desc: "1 קילו", price: 105, image: "🍖", imageType: "emoji" },
+            { id: 21, name: "לפתן תפוחים", desc: "2 ליטר", price: 65, image: "🍎", imageType: "emoji" }
+        ];
+
+        let cart = {};
+        let orders = [];
+        let isAdmin = false;
+        let tempQuantities = {};
+
+        // ===== LOAD DATA FROM FIREBASE =====
+        function loadDataFromFirebase() {
+            // Load products
+            database.ref('products').once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    products = Object.values(snapshot.val());
+                }
+                renderProducts();
+            });
+
+            // Load orders
+            database.ref('orders').once('value', (snapshot) => {
+                if (snapshot.exists()) {
+                    orders = Object.values(snapshot.val());
+                }
+            });
+
+            // Load cart from localStorage
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+            }
+            updateCart();
+        }
+
+        function saveOrderToFirebase(order) {
+            const orderId = order.id;
+            database.ref('orders/' + orderId).set(order, (error) => {
+                if (error) {
+                    console.error('Error saving order:', error);
+                    showSuccess('⚠️ שגיאה בשמירה - אנא נסה שנית');
+                } else {
+                    console.log('Order saved successfully');
+                }
+            });
+        }
+
+        // ===== RENDER FUNCTIONS =====
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            grid.innerHTML = products.map(p => {
+                let imageHTML = '';
+                if (p.imageType === 'emoji') {
+                    imageHTML = `<div class="product-image-emoji">${p.image}</div>`;
+                } else if (p.imageType === 'url') {
+                    imageHTML = `<img src="${p.image}" alt="${p.name}">`;
+                } else {
+                    imageHTML = `<div class="product-image-emoji">🍽️</div>`;
+                }
+
+                return `
+                    <div class="product-card">
+                        <div class="product-image">
+                            ${imageHTML}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${p.name}</div>
+                            <div class="product-description">${p.desc}</div>
+                            <div class="product-price">₪${p.price}</div>
+                            <div class="product-controls">
+                                <div class="qty-control">
+                                    <button class="qty-btn" onclick="updateTempQty('${p.id}', -1)">−</button>
+                                    <div class="qty-display" id="qty-display-${p.id}">0</div>
+                                    <button class="qty-btn" onclick="updateTempQty('${p.id}', 1)">+</button>
+                                </div>
+                                <button class="add-btn" onclick="addToCart('${p.id}')">הוסף</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateTempQty(productId, change) {
+            if (!tempQuantities[productId]) {
+                tempQuantities[productId] = 0;
+            }
+            tempQuantities[productId] = Math.max(0, tempQuantities[productId] + change);
+            document.getElementById(`qty-display-${productId}`).textContent = tempQuantities[productId];
+        }
+
+        function updateCart() {
+            const cartItems = document.getElementById('cartItems');
+            const items = Object.values(cart);
+            
+            if (items.length === 0) {
+                cartItems.innerHTML = '<p style="text-align: center; color: #6b7280; font-size: 12px;">אין מוצרים בעגלה</p>';
+                document.getElementById('itemsCount').textContent = '0';
+                document.getElementById('totalPrice').textContent = '₪0';
+                document.getElementById('checkoutBtn').disabled = true;
+                return;
+            }
+
+            let html = '';
+            let totalItems = 0;
+            let totalPrice = 0;
+
+            items.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                totalItems += item.quantity;
+                totalPrice += subtotal;
+                
+                html += `
+                    <div class="cart-item">
+                        <div class="cart-item-name">${item.name}</div>
+                        <div class="cart-item-qty">x${item.quantity}</div>
+                        <div class="cart-item-price">₪${subtotal}</div>
+                        <button class="remove-item" onclick="removeFromCart(${item.id})">🗑️</button>
+                    </div>
+                `;
+            });
+
+            cartItems.innerHTML = html;
+            document.getElementById('itemsCount').textContent = totalItems;
+            document.getElementById('totalPrice').textContent = '₪' + Math.round(totalPrice);
+            document.getElementById('checkoutBtn').disabled = false;
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        // ===== CART FUNCTIONS =====
+        function addToCart(productId) {
+            const product = products.find(p => p.id == productId);
+            const quantity = tempQuantities[productId] || 0;
+            
+            if (quantity > 0) {
+                if (cart[productId]) {
+                    cart[productId].quantity += quantity;
+                } else {
+                    cart[productId] = { ...product, quantity };
+                }
+                tempQuantities[productId] = 0;
+                updateCart();
+                renderProducts();
+            }
+        }
+
+        function removeFromCart(productId) {
+            delete cart[productId];
+            updateCart();
+        }
+
+        // ===== CHECKOUT FUNCTIONS =====
+        function goToCheckout() {
+            const items = Object.values(cart);
+            if (items.length === 0) {
+                alert('אין מוצרים בעגלה');
+                return;
+            }
+
+            const orderNumber = 'ORD-' + Date.now();
+            const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            let summary = '';
+            items.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                summary += `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                        <span>${item.name} (${item.desc})</span>
+                        <span>₪${subtotal}</span>
+                    </div>
+                `;
+            });
+
+            summary += `
+                <div style="padding: 12px 0; font-weight: 700; border-top: 1px solid #d1d5db; margin-top: 8px;">
+                    סה״כ: <span style="float: left;">₪${Math.round(totalPrice)}</span>
+                </div>
+            `;
+
+            document.getElementById('orderSummary').innerHTML = summary;
+            document.getElementById('orderNumber').textContent = orderNumber;
+            document.getElementById('orderTotal').textContent = '₪' + Math.round(totalPrice);
+            document.getElementById('checkoutModal').classList.add('show');
+        }
+
+        function closeCheckout() {
+            document.getElementById('checkoutModal').classList.remove('show');
+        }
+
+        function completeOrder() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+            const notes = document.getElementById('orderNotes').value.trim();
+
+            if (!name || !phone || !email || !address) {
+                alert('אנא מלא את כל השדות הנדרשים');
+                return;
+            }
+
+            const orderNumber = document.getElementById('orderNumber').textContent;
+            const totalPrice = document.getElementById('orderTotal').textContent;
+            const items = Object.values(cart);
+
+            // Create order object
+            const order = {
+                id: orderNumber,
+                date: new Date().toLocaleDateString('he-IL'),
+                customer: { name, phone, email, address },
+                items: items,
+                total: totalPrice,
+                notes: notes,
+                timestamp: Date.now()
+            };
+
+            // Save to Firebase
+            saveOrderToFirebase(order);
+
+            // Also save locally
+            orders.push(order);
+
+            // Create text file
+            let content = `מעדני סבא שמואל - קבלה\n`;
+            content += `${'='.repeat(40)}\n\n`;
+            content += `מספר הזמנה: ${orderNumber}\n`;
+            content += `תאריך: ${order.date}\n\n`;
+            content += `פרטי הלקוח:\n`;
+            content += `שם: ${name}\n`;
+            content += `טלפון: ${phone}\n`;
+            content += `דוא״ל: ${email}\n`;
+            content += `כתובת: ${address}\n\n`;
+            content += `פרטי ההזמנה:\n`;
+            content += `${'─'.repeat(40)}\n`;
+            items.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                content += `${item.name} (${item.desc})\n`;
+                content += `  כמות: ${item.quantity} x ₪${item.price} = ₪${subtotal}\n`;
+            });
+            content += `${'─'.repeat(40)}\n`;
+            content += `סה״כ: ${totalPrice}\n\n`;
+            if (notes) {
+                content += `הערות: ${notes}\n\n`;
+            }
+            content += `תודה על הזמנתך!\n`;
+
+            // Download file
+            const element = document.createElement("a");
+            element.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(content));
+            element.setAttribute("download", `הזמנה_${orderNumber}.txt`);
+            element.style.display = "none";
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+
+            // Send to Telegram
+            const telegramToken = localStorage.getItem('telegramToken');
+            const telegramChatId = localStorage.getItem('telegramChatId');
+            if (telegramToken && telegramChatId) {
+                let itemsList = items.map(i => `${i.name} x${i.quantity}`).join('\n');
+                const message = `📋 הזמנה חדשה!\n\nמספר: ${orderNumber}\nלקוח: ${name}\nטלפון: ${phone}\n\n${itemsList}\n\nסה״כ: ${totalPrice}`;
+                fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: telegramChatId, text: message })
+                }).catch(err => console.log('Telegram send failed'));
+            }
+
+            closeCheckout();
+            
+            // Show success screen
+            document.getElementById('successOrderNumber').textContent = orderNumber;
+            document.getElementById('successScreen').classList.add('show');
+
+            // Clear form and cart
+            document.getElementById('customerName').value = '';
+            document.getElementById('customerPhone').value = '';
+            document.getElementById('customerEmail').value = '';
+            document.getElementById('customerAddress').value = '';
+            document.getElementById('orderNotes').value = '';
+            cart = {};
+            localStorage.removeItem('cart');
+            tempQuantities = {};
+        }
+
+        function newOrder() {
+            document.getElementById('successScreen').classList.remove('show');
+            renderProducts();
+            updateCart();
+            window.scrollTo(0, 0);
+        }
+
+        // ===== ADMIN FUNCTIONS =====
+        function goToAdmin() {
+            document.getElementById('loginModal').classList.add('show');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.remove('show');
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function adminLogin() {
+            const password = document.getElementById('adminPassword').value;
+            const adminPassword = localStorage.getItem('adminPassword') || '1234';
+
+            if (password === adminPassword) {
+                isAdmin = true;
+                closeLoginModal();
+                document.querySelector('.customer-page').classList.remove('active');
+                document.querySelector('.admin-page').classList.add('active');
+                renderAdminPanel();
+            } else {
+                alert('סיסמה שגויה');
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            document.querySelector('.admin-page').classList.remove('active');
+            document.querySelector('.customer-page').classList.add('active');
+        }
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function renderAdminPanel() {
+            renderDashboard();
+            renderOrders();
+            
+            // Load settings
+            document.getElementById('deliveryMessage').value = localStorage.getItem('deliveryMessage') || '';
+            document.getElementById('telegramToken').value = localStorage.getItem('telegramToken') || '';
+            document.getElementById('telegramChatId').value = localStorage.getItem('telegramChatId') || '';
+        }
+
+        function renderDashboard() {
+            const totalOrders = orders.length;
+            const totalRevenue = orders.reduce((sum, order) => {
+                const price = parseInt(order.total.replace('₪', ''));
+                return sum + price;
+            }, 0);
+            const totalItems = orders.reduce((sum, order) => sum + order.items.length, 0);
+
+            const productQty = {};
+            orders.forEach(order => {
+                order.items.forEach(item => {
+                    const key = item.id;
+                    if (!productQty[key]) {
+                        productQty[key] = { name: item.name, desc: item.desc, qty: 0 };
+                    }
+                    productQty[key].qty += item.quantity;
+                });
+            });
+
+            const statsHTML = `
+                <div class="dashboard-card blue">
+                    <div class="dashboard-label">סה״כ הזמנות</div>
+                    <div class="dashboard-value">${totalOrders}</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="dashboard-label">סה״כ הכנסות</div>
+                    <div class="dashboard-value">₪${totalRevenue}</div>
+                </div>
+                <div class="dashboard-card red">
+                    <div class="dashboard-label">סה״כ פריטים</div>
+                    <div class="dashboard-value">${totalItems}</div>
+                </div>
+            `;
+            document.getElementById('dashboardStats').innerHTML = statsHTML;
+
+            let tableHTML = '';
+            products.forEach(p => {
+                const qty = productQty[p.id]?.qty || 0;
+                tableHTML += `
+                    <tr>
+                        <td>${p.name} (${p.desc})</td>
+                        <td><span class="qty-badge">${qty}</span></td>
+                        <td>${p.desc.includes('ליטר') ? 'ליטר' : p.desc.includes('גרם') ? 'גרם' : 'יח׳'}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('productsQtyTable').innerHTML = tableHTML;
+        }
+
+        function renderOrders() {
+            const list = document.getElementById('ordersList');
+            if (orders.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">אין הזמנות עדיין</p>';
+                return;
+            }
+
+            list.innerHTML = orders.slice().reverse().map(order => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-number">${order.id}</span>
+                        <span class="order-date">${order.date}</span>
+                    </div>
+                    <div class="order-customer">${order.customer.name}</div>
+                    <div class="order-details">
+                        📞 ${order.customer.phone}<br>
+                        📧 ${order.customer.email}<br>
+                        📍 ${order.customer.address}
+                    </div>
+                    <div class="order-total">סה״כ: ${order.total}</div>
+                </div>
+            `).join('');
+        }
+
+        function saveSettings() {
+            localStorage.setItem('deliveryMessage', document.getElementById('deliveryMessage').value);
+            localStorage.setItem('telegramToken', document.getElementById('telegramToken').value);
+            localStorage.setItem('telegramChatId', document.getElementById('telegramChatId').value);
+            showSuccess('ההגדרות נשמרו בהצלחה! ✓');
+        }
+
+        function showSuccess(message) {
+            const msg = document.getElementById('successMessage');
+            msg.textContent = message;
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 4000);
+        }
+
+        // ===== INITIALIZATION =====
+        loadDataFromFirebase();
+    </script>
+</body>
+</html>
