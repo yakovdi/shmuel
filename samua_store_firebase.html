@@ -932,17 +932,20 @@
     <div class="success-message" id="successMessage">✓ הפעולה בוצעה בהצלחה!</div>
 
     <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+                // ===== FIREBASE CONFIG =====
+        // ⚠️ עדכן את הנתונים האלה עם שלך מ-Firebase Console
+const firebaseConfig = {
+  apiKey: "AIzaSyA6mK1mLqNph2577n-mTVfo-JcvjiZmKZU",
+  authDomain: "shmuel-store.firebaseapp.com",
+  projectId: "shmuel-store",
+  storageBucket: "shmuel-store.firebasestorage.app",
+  messagingSenderId: "183247822695",
+  appId: "1:183247822695:web:8eda6b80307c6342c419c2",
+  measurementId: "G-S0WKLKRH8R"
+};
         // ===== FIREBASE CONFIG =====
         // ⚠️ עדכן את הנתונים האלה עם שלך מ-Firebase Console
-        const firebaseConfig = {
-            apiKey: "AIzaSyDemoKey123456789",
-            authDomain: "samua-store.firebaseapp.com",
-            databaseURL: "https://samua-store-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "samua-store",
-            storageBucket: "samua-store.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abc123def456"
-        };
 
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
